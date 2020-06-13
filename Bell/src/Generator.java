@@ -500,9 +500,9 @@ public class Generator {
 				linecount++;
 				if (linecount<=pageSet.getHeight()) {
 					if(pageSet.getWidth()<line.length())
-						res+=line.substring(0, pageSet.getWidth())+'\n';
+						res+=line.substring(0, pageSet.getWidth())+System.lineSeparator();
 					else
-						res+=line+'\n';
+						res+=line+System.lineSeparator();
 				}else {
 					break;
 				}
