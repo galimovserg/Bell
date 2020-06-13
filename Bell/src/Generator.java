@@ -79,6 +79,15 @@ public class Generator {
 			this.rowContent=row;
 			this.rowSpliter=genReportTableRowSpliter();
 		}
+		
+		
+		
+		static boolean isletter(char c) {
+			switch(c) {
+			case '+':case '-':case '_':case ' ':case '*':case '/': {return false;}
+			default: return true;
+			}
+		}
 		/**
 		 * Делит строку s таким образом, чтобы каждая подстрока вмещалась 
 		 * в ячейку по ширине колонки size
@@ -88,168 +97,51 @@ public class Generator {
 		 * @return
 		 */
 		static ArrayList<String> SplitCell(String s, int size){
-			if(size<=0)return null;
-			int pos=0;
-			String nextWord="";
-			String nextLine="";
-			ArrayList<String> res=new ArrayList<String>();
 			
+			ArrayList<String> res=new ArrayList<String>();
+			if(size<=0)
+				return res;
+			int pos=0;
+			boolean prvIsNotSpace=true;
 			while(pos<s.length()) {
-				switch(s.charAt(pos)) {
-				case '\n':{
-					//дописываем текущую строчку и заполняем другие
-					for(int i=0;i<nextWord.length();i++) {
-						if(nextLine.length()+1<=size) 
-							nextLine+=nextWord.charAt(i);
-						else {
-							res.add(nextLine);
-							nextLine=""+nextWord.charAt(i);
-						}
-					}
-					
-					res.add(nextLine);
-					nextLine="";
-					nextWord="";
-					break;
-				}
-				case '-':case '/':{
-					//если первый символ - разделитель - то считаем его частью слова
-					//(опционально)
-					//например для "-хорошо" не будет осуществлятся переноса слова "хорошо"
-					if(pos==0) {nextWord=""+s.charAt(pos); break;}
-					//новое слово и разделитель помещаются по ширине
-					if(nextLine.length()+nextWord.length()+1<size) {
-						nextLine+=nextWord+s.charAt(pos);
-						nextWord="";
-					}else
-					//новое слово и разделитель точно помещаются по ширине
-					if(nextLine.length()+nextWord.length()+1==size)  {
-						nextLine+=nextWord+s.charAt(pos);
-						nextWord="";
-						res.add(nextLine);
-						nextLine="";
-					}else
-					//новое слово точно помещаются по ширине
-					if(nextLine.length()+nextWord.length()==size) {
-						nextLine+=nextWord;
-						nextWord="";
-						res.add(nextLine);
-						nextLine=""+s.charAt(pos);
-					}else
-					//новое слово не помещаются по ширине
-					if(nextLine.length()+nextWord.length()>size) {	
-						if(nextLine!="")
-							res.add(nextLine);
-						nextLine="";
-						
-						for(int i=0;i<nextWord.length();i++) {
-							if(nextLine.length()+1<=size) 
-								nextLine+=nextWord.charAt(i);
-							else {
-								res.add(nextLine);
-								nextLine=""+nextWord.charAt(i);
-							}
-						}
-						//последняя строка позволяет добавить разделитель и при этом
-						//еще остается место
-						if(nextLine.length()+1<size) {
-							nextLine+=s.charAt(pos);
-						}else 
-						//последняя строка позволяет вместить разделитель,
-						//но места больше нет
-						if(nextLine.length()+1==size) {
-							nextLine+=s.charAt(pos);
-							res.add(nextLine);
-							nextLine="";
-						}
-						//последняя строка не вмещает разделитель
-						else {
-							res.add(nextLine);
-							nextLine=""+s.charAt(pos);
-						}
-						nextWord="";
-						
-					}
-					break;
-					
-				}
-				//для пробела отличие в том, что он не переносится на следующую строку
-				case ' ':{
-					if(pos==0) {nextWord=" "; break;}
-					if(nextLine.length()+nextWord.length()+1<size) {
-						nextLine+=nextWord+s.charAt(pos);
-						nextWord="";
-					}else 
-					if(nextLine.length()+nextWord.length()+1==size)  {
-						nextLine+=nextWord+s.charAt(pos);
-						nextWord="";
-						res.add(nextLine);
-						nextLine="";
-					}else
-					if(nextLine.length()+nextWord.length()==size) {
-						nextLine+=nextWord;
-						nextWord="";
-						res.add(nextLine);
-						nextLine="";
-					}else
-					if(nextLine.length()+nextWord.length()>size) {		
-						if(nextLine!="")
-							res.add(nextLine);
-						nextLine="";
-						for(int i=0;i<nextWord.length();i++) {
-							if(nextLine.length()+1<=size) 
-								nextLine+=nextWord.charAt(i);
-							else {
-								res.add(nextLine);
-								nextLine=""+nextWord.charAt(i);
-							}
-						}
-						if(nextLine.length()+1<size) {
-							nextLine+=s.charAt(pos);
-						}else 
-						if(nextLine.length()+1==size) {
-							nextLine+=s.charAt(pos);
-							res.add(nextLine);
-							nextLine="";
-						
-						}else {
-							res.add(nextLine);
-							nextLine="";
-						}
-						nextWord="";
-						
-					}
-					break;
-				}
-				default:{
-					nextWord+=s.charAt(pos);
+				
+				if(s.charAt(pos)==' '&&prvIsNotSpace) {
+					pos++;
+					prvIsNotSpace=false;
+					continue;
+				}else
+				if(s.charAt(pos)!=' ') {
+					prvIsNotSpace=true;
 				}
 				
+				if(pos+size>=s.length()) {
+					//add space
+					res.add(s.substring(pos, s.length()));
+					break;
 				}
-				pos++;
+				
+				for(int i=size-1;i>=0;i--) {
+					//System.out.print(i+" ");
+					if(i==0) {
+						res.add(s.substring(pos,pos+size));
+						pos=pos+size;
+						break;
+					}
+					if(!isletter(s.charAt(pos+i))) {
+						
+						res.add(s.substring(pos, pos+i+1));
+						pos=pos+i+1;
+						break;
+					}
+					
+				}
+				
+				
 			}
 			
-			if(nextLine.length()+nextWord.length()<=size) {
-				nextLine+=nextWord;
-				nextWord="";
-				res.add(nextLine);
-			}else
-			if(nextLine!="")
-				res.add(nextLine);
-			nextLine="";
-			
-			for(int i=0;i<nextWord.length();i++) {
-				if(nextLine.length()+1<=size) 
-					nextLine+=nextWord.charAt(i);
-				else {
-					res.add(nextLine);
-					nextLine=""+nextWord.charAt(i);
-				}
-			}
-			
-			if(!nextLine.equals("")) { res.add(nextLine);}
 			return res;
 		}
+		
 		/**
 		 * Функция добавляет дополнительные пробелы до заданной ширины ячейки
 		 * @param Content
@@ -365,7 +257,7 @@ public class Generator {
 		public void setData(List<String[]> data) {
 			for(String[] row:data) {
 				rowList.add(new ReportTableRow(this, row));
-				System.out.println(row.length);
+				//System.out.println(row.length);
 			}
 		}
 		public ReportTableColumn[] getReportColumns() {
