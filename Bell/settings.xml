@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<settings>
+	<page>
+		<width>32</width>
+		<height>12</height>
+	</page>
+	<columns>
+		<column>
+			<title>Номер</title>
+			<width>8</width>
+		</column>
+		<column>
+			<title>Дата</title>
+			<width>7</width>
+		</column>
+		<column>
+			<title>ФИО</title>
+			<width>7</width>
+		</column>
+	</columns>
+</settings>
