@@ -581,16 +581,15 @@ public class Generator {
 				reportcolumns[i]=new ReportTableColumn(cname,cwidth);
 			}
 			//данные из tsv
-			TsvParserSettings settings = new TsvParserSettings(); 
-		    settings.getFormat().setLineSeparator("\n"); 
-		    TsvParser parser = new TsvParser(settings); 
-		    List<String[]> ml =  parser.parseAll(new File(sourcePath));
+			TsvParserSettings settings = new TsvParserSettings();
+			settings.getFormat().setLineSeparator("\n");
+			TsvParser parser = new TsvParser(settings);
+			List<String[]> ml =  parser.parseAll(new File(sourcePath));
 			
-		    
-			ReportDocument report = new ReportDocument(pageSet, new ReportDocumentSetting("~\n"));
+		    //генерация отчета
+			ReportDocument report = new ReportDocument(pageSet, new ReportDocumentSetting("~"+System.lineSeparator()));
 			ReportTable t=new ReportTable(reportcolumns);
 			
-			//data = new String[][] {{"1","kd dfd dgk","ggg ddddf"},{"2","gff jhjhjh","dgdd d"},{"3","gffdfsdsd jhjhjh","dgddsd sdsdsdsdd fnnf"}};	
 			t.setData(ml);
 			report.addTable(t);
 			System.out.println(report.toString());
