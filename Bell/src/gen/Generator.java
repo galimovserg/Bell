@@ -8,8 +8,9 @@ package gen;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Scanner;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,38 +21,95 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.univocity.parsers.tsv.TsvParser;
-import com.univocity.parsers.tsv.TsvParserSettings;
 
 
 
 public class Generator{
 	
-	interface IGenerator{
-		interface ITextReports{
-			
-			interface ITextReportTableColumn{}
-			
-			interface ITextReportTableRow{}
-			
-			interface ITextReportTable{
-				void setData(String[][] data);
-				String toString();
+	
+
+	static class DocumentWriter{
+		ReportPageSetting pageSet;
+		ReportDocumentSetting docSet;
+		Writer w;
+		private int pagePos;
+		DocumentWriter(Writer w,ReportPageSetting pageSet, ReportDocumentSetting docSet) {
+			this.w=w;
+			this.pageSet=pageSet;
+			this.docSet=docSet;
+			pagePos=0;
+		}
+		
+		void addLines(ArrayList<String> docLines) throws IOException {
+			for(String line:docLines) {
+				if(pageSet.getHeight()-pagePos>=1) {
+					w.write(line+System.lineSeparator());
+					pagePos++;
+				}else {
+					pagePos=0;
+					w.write(docSet.getPageLineSpliter());
+					
+				}
 			}
-			interface ITextReportPageSetting{}
-			
-			interface ITextReportDocumentSetting{}
-			
-			interface ITextReportDocument{
-				void addTable(ITextReportTable t);
-			}
-			interface ITextReportPage{
-				void addDocumentLines(ArrayList<String> lines);
-				int getFreeLinesCount();
+		}
+
+		public int getFreeLinesCount() {
+			// TODO Auto-generated method stub
+			return pageSet.getHeight()-pagePos;
+		}
+
+		public void nextPage() throws IOException {
+			// TODO Auto-generated method stub
+			w.write(docSet.getPageLineSpliter());
+			pagePos=0;
+		}
+		
+	}
+	
+	
+	public static class TSVFile extends File{
+		public TSVFile(String pathname) {
+			super(pathname);
+		}
+
+		public void makeTextReport(ReportTableColumn[] columns,ReportPageSetting pageSet, ReportDocumentSetting docSet, Writer w){
+			try (Scanner scanner = new Scanner(this)) {
+				ReportTable t=new ReportTable(columns);
+				Object[] title=Arrays.stream(t.getReportColumns()).map(s->s.getTitle()).toArray();
+				
+				DocumentWriter dw=new DocumentWriter(w, pageSet, docSet);
+				dw.addLines(new ReportTableRow(t,title).toDocumentLines());
+				
+				while (scanner.hasNext()){
+					Scanner cellsc=new Scanner(scanner.nextLine());
+					cellsc.useDelimiter("\t");
+					ArrayList<Object> cells=new ArrayList<Object>();
+					while(cellsc.hasNext()) {
+						//w.write("| "++" | ");
+						//System.out.print("| "+cellsc.next()+" | ");
+						cells.add(cellsc.next());
+					}
+					//w.write(System.lineSeparator());	
+					ReportTableRow row=new ReportTableRow(t, cells);
+					ArrayList<String> rowLines = row.toDocumentLines();
+					
+					if(dw.getFreeLinesCount()>=rowLines.size()) {
+						dw.addLines(rowLines);
+					}else {
+						//если строка не помещается на данной странице
+						//то добавляем новую страницу
+						dw.nextPage();
+						//и выводим заголовки столбцов
+						dw.addLines(new ReportTableRow(t,title).toDocumentLines());
+						dw.addLines(rowLines);
+					}
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}
-	
 	
 	@SuppressWarnings("resource")
 	static void pressToExit() {
@@ -59,6 +117,7 @@ public class Generator{
 		new Scanner(System.in).nextLine();
 		System.exit(0);
 	}
+	
 	public static void main(String[] args) throws SAXException, IOException, ParserConfigurationException {
 		// TODO Auto-generated method stub
 		//new MainWindow();
@@ -69,10 +128,12 @@ public class Generator{
 			settingPath=args[0];
 			sourcePath=args[1];
 			reportPath=args[2];
+			
 		}catch(Exception ex){
 			System.out.println(ex.getMessage());
 			pressToExit();
 		}
+		
 		System.out.println("Загрузка...");
 		System.out.println("Setting path is \'"+settingPath+"\'");
 		System.out.println("Source path is \'"+sourcePath+"\'");
@@ -120,27 +181,12 @@ public class Generator{
 				int cwidth=Integer.valueOf(columnElement.getElementsByTagName("width").item(0).getTextContent());
 				reportcolumns[i]=new ReportTableColumn(cname,cwidth);
 			}
-			//данные из tsv
-			TsvParserSettings settings = new TsvParserSettings();
-			settings.getFormat().setLineSeparator("\n");
-			TsvParser parser = new TsvParser(settings);
-			List<String[]> ml =  parser.parseAll(new File(sourcePath));
 			
-		    //генерация отчета
-			ReportDocument report = new ReportDocument(pageSet, new ReportDocumentSetting("~"+System.lineSeparator()));
-			ReportTable t=new ReportTable(reportcolumns);
 			
-			t.setData(ml);
-			report.addTable(t);
-			System.out.println(report.toString());
-			
-			//основная функция, генерирует отчет
-			String reportContent=report.toString();
 			//записываем отчет в файл
 			File reportFile=new File(reportPath);
 			try(FileWriter writer = new FileWriter(reportFile, true)){
-				writer.write(reportContent);
-				writer.flush();
+				new TSVFile(sourcePath).makeTextReport(reportcolumns,pageSet, new ReportDocumentSetting("~"+System.lineSeparator()), writer);
 			}catch(IOException ex){
 				System.out.println(ex.getMessage());
 				System.out.println("Проблема с записью файла");

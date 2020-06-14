@@ -13,7 +13,11 @@ public class ReportTableRow {
 		this.reportTableRowSeparator=genReportTableRowSeparator();
 	}
 	
-	
+	ReportTableRow(ReportTable t, ArrayList<Object> row){
+		this.t=t;
+		this.rowContent=row.toArray();
+		this.reportTableRowSeparator=genReportTableRowSeparator();
+	}
 	
 	static boolean isletter(char c) {
 		switch(c) {
